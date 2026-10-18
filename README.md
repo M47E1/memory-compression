@@ -1,21 +1,45 @@
+<p align="center">
+  <img src="assets/cover-github.png" alt="Memory Compression — Localhost, cleaned up. 关闭浏览器预览页，让对应本地服务一起收尾。" width="960" />
+</p>
+
 # Memory Compression
 
-关闭最后一个 localhost 预览页后，停止对应的本地开发服务。支持 Chrome、Edge 和 Windows。
+**关掉最后一个 localhost 预览页，把对应服务也一起收尾。**
 
-**名称说明：Memory Compression 是项目名称，不是 Windows 系统内存压缩功能的开关，也不包含自行实现的内存压缩算法。** 主要功能是预览服务收尾；内存释放通过用户自行选择的外部引擎执行。
+A small Windows companion for everyday development. Close the last connected preview tab; stop its matching local server.
 
-[下载 Windows 便携版](https://github.com/M47E1/memory-compression/releases/latest) · [使用源码](https://github.com/M47E1/memory-compression)
+[**下载 Windows 便携版**](https://github.com/M47E1/memory-compression/releases/latest) · [三步开始](#直接使用) · [识别范围](#会关闭什么) · [审计说明](AUDIT.md) · [MIT License](LICENSE)
 
-**不需要内存清理引擎。** 默认只做预览收尾，不清空系统缓存，不删除分页文件，也不下载或捆绑鲁大师等第三方程序。需要定时调用自己的可信引擎时，可以单独配置。
+Windows 10/11 · Chrome / Edge · .NET Framework · 无需管理员权限 · 外部引擎可选
+
+## 写代码时，页面关了，服务还在？
+
+浏览器标签页和开发服务各自运行。关掉页面，`next dev`、Vite 或 Astro 的进程通常仍留在后台；一天切换几个项目，预览服务也容易越攒越多。
+
+Memory Compression 用浏览器扩展报告仍打开的本地端口，再由 Windows 工具核对对应进程。最后一页关掉后，等待约 3 秒，再确认并停止那个服务；刷新、切换标签或仍有同端口页面时，服务继续运行。
+
+```text
+打开预览 → 扩展报告本地端口 → 记录服务身份
+关闭最后一页 → 等待约 3 秒 → 重新核对 → 停止对应服务
+```
+
+**不需要内存清理引擎。** 默认只做预览收尾，不清空系统缓存，不删除分页文件，也不下载或捆绑鲁大师等第三方程序。需要定时调用自己的可信引擎时，可以单独配置；引擎失败也不影响预览收尾。
+
+> **名称说明：** Memory Compression 为项目名称，并非 Windows 系统内存压缩功能的开关，也不包含自行实现的内存压缩算法。它解决的是本地开发预览的进程收尾，不承诺提高系统速度或释放固定容量的内存。
 
 ## 直接使用
 
 需要 Windows 10/11 和 .NET Framework 4.8 或更新的 4.x 运行环境。普通使用不需要 Node.js、Python、Visual Studio 或管理员权限。目标服务必须属于当前用户可停止的进程；权限不足时不会自动提权。
 
-1. 解压 `windows-portable.zip`，双击 `MemoryCompression.exe`。可选引擎留空即可。
-2. Chrome 打开 `chrome://extensions`，Edge 打开 `edge://extensions`，开启开发者模式，选择“加载已解压的扩展”，加载压缩包内的 `browser-extension` 文件夹。
-3. 扩展名称为 **Memory Compression**，固定 ID 为 `dgpfiadablpfojbalengndogkiidplcb`。打开扩展弹窗，显示“已连接”后再使用。
-4. 打开自己的 localhost 预览；关闭最后一个对应端口的预览页后，工具等待约 3 秒，再确认并停止对应进程。进程核对和退出还需要少量时间，不保证在整整 3 秒时退出。
+1. **解压并运行。** 从上方下载便携 ZIP，解压后双击 `MemoryCompression.exe`，可选引擎留空。
+2. **加载扩展。** Chrome 打开 `chrome://extensions`，Edge 打开 `edge://extensions`，开启开发者模式，选择“加载已解压的扩展”，加载包内的 `browser-extension` 文件夹。扩展名称为 **Memory Compression**，固定 ID 为 `dgpfiadablpfojbalengndogkiidplcb`。
+3. **确认连接，再正常开发。** 打开扩展弹窗，显示“已连接”后打开自己的 localhost 预览。关闭最后一个对应端口的页面，工具就会核对并停止对应服务；进程核对和退出还需要少量时间，不保证在整整 3 秒时退出。
+
+### 程序界面
+
+<img src="assets/app-window.png" alt="实际 Windows 程序界面：可选引擎留空，预览收尾已启用，重试间隔为 200 秒。" width="486" />
+
+封面为 ImageGen 制作的项目插画；上图为实际程序界面。引擎栏留空即可使用预览收尾。
 
 Chrome、Edge、不同浏览器配置文件需要分别加载。同一端口在任一已连接浏览器中仍打开时，不停止。无痕窗口需要在这个扩展的详细设置里允许无痕/InPrivate 使用；未允许时，不要在普通窗口与未受监看的无痕窗口同时查看同一个服务。
 

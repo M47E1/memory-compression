@@ -10,6 +10,7 @@ if (Test-Path -LiteralPath $stage) { throw 'Package staging directory already ex
 New-Item -ItemType Directory -Path $stage | Out-Null
 $sourceFiles = @(
     '.gitignore', 'LICENSE', 'NOTICE', 'README.md', 'AUDIT.md', 'Build.ps1', 'Test.ps1', 'Package.ps1', 'package.json', 'package-lock.json',
+    'assets\README.md', 'assets\cover-github.png', 'assets\cover-portfolio.webp', 'assets\app-window.png',
     'src\MemoryCompression.cs', 'src\PreviewCleanup.cs',
     'browser-extension\manifest.json', 'browser-extension\background.js', 'browser-extension\ports.js',
     'browser-extension\popup.html', 'browser-extension\popup.js',
@@ -23,7 +24,7 @@ function Copy-PackageFile([string]$source, [string]$destination) {
 $sourceStage = Join-Path $stage 'source'
 foreach ($file in $sourceFiles) { Copy-PackageFile (Join-Path $PSScriptRoot $file) (Join-Path $sourceStage $file) }
 $portableStage = Join-Path $stage 'portable'
-foreach ($file in @('LICENSE', 'NOTICE', 'README.md', 'AUDIT.md') + @($sourceFiles | Where-Object { $_ -like 'browser-extension\*' })) {
+foreach ($file in @('LICENSE', 'NOTICE', 'README.md', 'AUDIT.md') + @($sourceFiles | Where-Object { $_ -like 'browser-extension\*' -or $_ -like 'assets\*' })) {
     Copy-PackageFile (Join-Path $PSScriptRoot $file) (Join-Path $portableStage $file)
 }
 Copy-PackageFile (Join-Path $PSScriptRoot 'bin\MemoryCompression.exe') (Join-Path $portableStage 'MemoryCompression.exe')

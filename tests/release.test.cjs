@@ -42,3 +42,24 @@ test("package file list excludes local history, old binaries, and test results",
     assert.doesNotMatch(file, /test-output|archive|node_modules|\.exe$|\.jsonl$/i);
   }
 });
+
+test("showcase images stay small and are included in both package variants", () => {
+  const banner = fs.readFileSync(path.join(root, "assets/cover-github.png"));
+  assert.equal(banner.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  assert.equal(banner.readUInt32BE(16), 1280);
+  assert.equal(banner.readUInt32BE(20), 640);
+  assert.ok(banner.length < 1024 * 1024);
+  const cover = fs.readFileSync(path.join(root, "assets/cover-portfolio.webp"));
+  assert.equal(cover.toString("ascii", 0, 4), "RIFF");
+  assert.equal(cover.toString("ascii", 8, 12), "WEBP");
+  assert.ok(cover.length < 80 * 1024);
+  const packaging = read("Package.ps1");
+  for (const image of ["cover-github.png", "cover-portfolio.webp", "app-window.png"]) {
+    assert.ok(packaging.includes(`'assets\\${image}'`));
+  }
+  assert.ok(packaging.includes("$_ -like 'assets\\*'"));
+  for (const match of read("README.md").matchAll(/<img\s+src="([^"]+)"/g)) {
+    assert.ok(fs.existsSync(path.join(root, match[1])), match[1]);
+    assert.ok(packaging.includes(`'${match[1].replaceAll("/", "\\")}'`));
+  }
+});
