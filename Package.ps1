@@ -9,12 +9,12 @@ $stage = Join-Path $OutputDirectory ('package-' + [DateTime]::UtcNow.ToString('y
 if (Test-Path -LiteralPath $stage) { throw 'Package staging directory already exists.' }
 New-Item -ItemType Directory -Path $stage | Out-Null
 $sourceFiles = @(
-    '.gitignore', 'LICENSE', 'NOTICE', 'README.md', 'AUDIT.md', 'Build.ps1', 'Test.ps1', 'Package.ps1', 'package.json', 'package-lock.json',
+    '.gitignore', 'LICENSE', 'NOTICE', 'README.md', 'AUDIT.md', 'CHANGELOG.md', 'Build.ps1', 'Test.ps1', 'Package.ps1', 'Install-WindowsMemoryCleaner.ps1', 'package.json', 'package-lock.json',
     'assets\README.md', 'assets\cover-github.png', 'assets\cover-portfolio.webp', 'assets\app-window.png', 'assets\app.ico',
-    'src\MemoryCompression.cs', 'src\PreviewCleanup.cs',
+    'src\MemoryCompression.cs', 'src\PreviewCleanup.cs', 'src\GentleEngine.cs',
     'browser-extension\manifest.json', 'browser-extension\background.js', 'browser-extension\ports.js',
     'browser-extension\popup.html', 'browser-extension\popup.js',
-    'tests\PreviewCleanupTests.cs', 'tests\AdversarialTests.cs', 'tests\RuntimeTests.cs', 'tests\OptimizerStub.cs',
+    'tests\PreviewCleanupTests.cs', 'tests\AdversarialTests.cs', 'tests\RuntimeTests.cs', 'tests\GentleEngineTests.cs', 'tests\OptimizerStub.cs',
     'tests\ports.test.cjs', 'tests\release.test.cjs', 'tests\browser.cjs', 'tests\Assert-BackgroundWindows.ps1'
 )
 function Copy-PackageFile([string]$source, [string]$destination) {
@@ -24,7 +24,7 @@ function Copy-PackageFile([string]$source, [string]$destination) {
 $sourceStage = Join-Path $stage 'source'
 foreach ($file in $sourceFiles) { Copy-PackageFile (Join-Path $PSScriptRoot $file) (Join-Path $sourceStage $file) }
 $portableStage = Join-Path $stage 'portable'
-foreach ($file in @('LICENSE', 'NOTICE', 'README.md', 'AUDIT.md') + @($sourceFiles | Where-Object { $_ -like 'browser-extension\*' -or $_ -like 'assets\*' })) {
+foreach ($file in @('LICENSE', 'NOTICE', 'README.md', 'AUDIT.md', 'CHANGELOG.md', 'Install-WindowsMemoryCleaner.ps1') + @($sourceFiles | Where-Object { $_ -like 'browser-extension\*' -or $_ -like 'assets\*' })) {
     Copy-PackageFile (Join-Path $PSScriptRoot $file) (Join-Path $portableStage $file)
 }
 Copy-PackageFile (Join-Path $PSScriptRoot 'bin\MemoryCompression.exe') (Join-Path $portableStage 'MemoryCompression.exe')

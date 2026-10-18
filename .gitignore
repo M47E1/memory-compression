@@ -2,6 +2,7 @@
 /artifacts/
 /test-output/
 /node_modules/
+/engines/
 /.vs/
 *.user
 *.suo

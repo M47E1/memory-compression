@@ -3,7 +3,28 @@
 This document is a curated review summary, not a runtime log. It contains no local
 user identifiers, browsing records, real process IDs, or machine-specific paths.
 
-## Fixed blocker: process misclassification
+## 1.3.0 publication checks
+
+Memory cleanup is now manual-only, with the official Windows Memory Cleaner
+3.0.8 executable and `/StandbyListLowPriority` as the only supported engine/mode.
+The optional installer checks both the release digest and Authenticode signature;
+the app checks the expected bytes again before a manual UAC launch. No third-party
+binary is shipped. Preview classification, protocol identities, journal format,
+and earlier-denial behavior are unchanged.
+
+Fresh local checks passed 8 JavaScript tests, 91 controller assertions, 50 Node
+classification cases, 28 engine-policy/manual-only assertions, and 26 actual
+off-screen WinForms runtime assertions. These cover startup/timer non-execution,
+manual results, refused files, and preview independence while a simulated engine
+is busy, fails, or reports cancelled authorization. Runtime test doubles do not
+execute a real memory cleaner or require UAC. They are not performance benchmarks.
+
+The browser and real-framework results below describe the original 1.0.0 review,
+not a new 1.3.0 browser run. Version 1.3.0 publication did not start an extra browser
+under local memory pressure. No second physical Windows machine or enterprise
+policy configuration was tested.
+
+## 1.0.0 fixed blocker: process misclassification
 
 **Severity: high. Status: repaired with regression coverage.**
 

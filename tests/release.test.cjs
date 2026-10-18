@@ -23,12 +23,31 @@ test("extension, host, and port filtering use the same public protocol identity"
 
 test("external engine is opt-in and no profile path is embedded in application defaults", () => {
   const app = read("src/MemoryCompression.cs");
-  assert.match(app, /OptimizerPath = string\.Empty/);
-  assert.match(app, /OptimizerArguments = string\.Empty/);
+  assert.match(app, /OptimizerPath = Path\.Combine\(AppDomain\.CurrentDomain\.BaseDirectory, "engines", "WindowsMemoryCleaner", "WinMemoryCleaner\.exe"\)/);
+  assert.match(app, /OptimizerArguments = GentleEngine\.Arguments/);
   assert.match(app, /SpecialFolder\.LocalApplicationData/);
   assert.doesNotMatch(app, /[A-Z]:\\Users\\/i);
   assert.match(app, /MemoryCompression-v1/);
   assert.match(read("LICENSE"), /MIT License/);
+});
+
+test("manual-only engine policy and optional installer use the same verified release", () => {
+  const engine = read("src/GentleEngine.cs");
+  const installer = read("Install-WindowsMemoryCleaner.ps1");
+  const digest = engine.match(/ReleaseDigest = "([a-f0-9]{64})"/)[1];
+  assert.ok(installer.includes(digest));
+  assert.match(engine, /Arguments = "\/StandbyListLowPriority"/);
+  assert.match(installer, /Get-AuthenticodeSignature/);
+  assert.match(installer, /Get-FileHash/);
+  assert.doesNotMatch(installer, /-ExecutionPolicy\s+Bypass|Set-ExecutionPolicy|Start-Process|Register-ScheduledTask|New-Service/i);
+  const app = read("src/MemoryCompression.cs");
+  const timer = app.slice(app.indexOf("private void TimerTick("), app.indexOf("private void RunOptimizer("));
+  assert.doesNotMatch(timer, /RunOptimizer\(/);
+  assert.match(timer, /QueuePreviewTick\(fallback\)/);
+  assert.match(app, /automatic_memory_cleanup/);
+  const pkg = JSON.parse(read("package.json"));
+  assert.equal(pkg.version, "1.3.0");
+  assert.match(app, /AssemblyFileVersion\("1\.3\.0\.0"\)/);
 });
 
 test("package file list excludes local history, old binaries, and test results", () => {

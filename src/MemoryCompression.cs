@@ -9,16 +9,16 @@ using System.Windows.Forms;
 
 [assembly: System.Reflection.AssemblyTitle("MemoryCompression")]
 [assembly: System.Reflection.AssemblyProduct("Memory Compression")]
-[assembly: System.Reflection.AssemblyDescription("本地预览关页收尾；外部内存释放引擎可选。")]
-[assembly: System.Reflection.AssemblyVersion("1.0.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.0.0.0")]
+[assembly: System.Reflection.AssemblyDescription("手动清理低优先级待机缓存；本地预览自动收尾。")]
+[assembly: System.Reflection.AssemblyVersion("1.3.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.3.0.0")]
 
 namespace MemoryCompression
 {
     internal sealed class Options
     {
-        internal string OptimizerPath = string.Empty;
-        internal string OptimizerArguments = string.Empty;
+        internal string OptimizerPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "engines", "WindowsMemoryCleaner", "WinMemoryCleaner.exe");
+        internal string OptimizerArguments = GentleEngine.Arguments;
         internal int InitialDelaySeconds = 0;
         internal int IntervalSeconds = 200;
         internal string TestJsonPath;
@@ -50,6 +50,8 @@ namespace MemoryCompression
                 else if (EqualsOption(arg, "--start-minimized")) options.StartMinimized = true;
                 else throw new ArgumentException("未知参数：" + arg);
             }
+            if (!string.Equals(options.OptimizerArguments, GentleEngine.Arguments, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("此版本只允许 /StandbyListLowPriority，不允许全局工作集或其他清理模式。");
             return options;
         }
 
@@ -259,10 +261,9 @@ namespace MemoryCompression
     internal sealed class MainForm : Form
     {
         private readonly Options _options;
-        private readonly TextBox _optimizerBox;
         private readonly Label _resultValue;
-        private readonly NumericUpDown _intervalBox;
         private readonly Button _toggleButton;
+        private readonly Func<EngineResult> _clean;
         private readonly System.Windows.Forms.Timer _timer;
         private readonly CheckBox _previewToggle;
         private readonly Label _previewStatus;
@@ -270,16 +271,16 @@ namespace MemoryCompression
         private int _previewBusy;
         private int _previewFallbackRequested;
         private bool _closing;
-        private bool _running = true;
         private bool _optimizerRunning;
         private int _countdown;
 
-        internal MainForm(Options options, bool offscreen)
+        internal MainForm(Options options, bool offscreen, Func<EngineResult> clean = null)
         {
             _options = options;
+            _clean = clean ?? (() => GentleEngine.Run(options.OptimizerPath));
             Text = "Memory Compression";
             Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
-            ClientSize = new Size(480, 228);
+            ClientSize = new Size(560, 245);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             StartPosition = offscreen ? FormStartPosition.Manual : FormStartPosition.CenterScreen;
@@ -296,50 +297,32 @@ namespace MemoryCompression
             }
             else if (options.StartMinimized) WindowState = FormWindowState.Minimized;
 
-            Controls.Add(CreateLabel("可选引擎", 18, 21));
-            _optimizerBox = new TextBox { Left = 80, Top = 17, Width = 324, Text = options.OptimizerPath };
-            _optimizerBox.AccessibleName = "外部内存释放引擎路径（可选，留空不影响预览收尾）";
-            Controls.Add(_optimizerBox);
-
-            Button browse = new Button { Left = 414, Top = 15, Width = 48, Height = 27, Text = "浏览" };
-            browse.Click += BrowseButtonClick;
-            Controls.Add(browse);
-
-            Controls.Add(CreateLabel("本次结果", 18, 62));
-            _resultValue = new Label { Left = 80, Top = 62, Width = 382, Height = 22, Text = "未配置引擎，仅收尾预览" };
+            Controls.Add(CreateLabel("清理引擎", 18, 20));
+            Controls.Add(CreateLabel("Windows Memory Cleaner 3.0.8", 92, 20));
+            Controls.Add(CreateLabel("清理范围", 18, 48));
+            Controls.Add(CreateLabel("仅低优先级待机缓存，不清程序工作集", 92, 48));
+            Controls.Add(CreateLabel("运行方式", 18, 76));
+            Controls.Add(CreateLabel("手动；不定时、不在启动时清内存", 92, 76));
+            Controls.Add(CreateLabel("本次结果", 18, 111));
+            _resultValue = new Label { Left = 92, Top = 109, Width = 314, Height = 42, Text = File.Exists(options.OptimizerPath) ? "尚未清理" : "可选引擎未安装；预览收尾不受影响" };
+            _resultValue.AccessibleName = "内存清理结果";
             Controls.Add(_resultValue);
-
-            Controls.Add(CreateLabel("重试间隔", 18, 104));
-            _intervalBox = new NumericUpDown
-            {
-                Left = 80,
-                Top = 100,
-                Width = 62,
-                Minimum = 1,
-                Maximum = 86400,
-                Value = Math.Min(86400, Math.Max(1, options.IntervalSeconds)),
-                TextAlign = HorizontalAlignment.Center
-            };
-            _intervalBox.AccessibleName = "预览兜底重试与可选引擎运行间隔（秒）";
-            Controls.Add(_intervalBox);
-            Controls.Add(CreateLabel("秒", 150, 104));
-
-            _toggleButton = new Button { Left = 374, Top = 94, Width = 88, Height = 31, Text = "停止" };
+            _toggleButton = new Button { Left = 424, Top = 105, Width = 116, Height = 34, Text = "清理一次" };
+            _toggleButton.AccessibleName = "清理一次低优先级待机缓存";
             _toggleButton.Click += ToggleButtonClick;
             Controls.Add(_toggleButton);
-
-            _previewToggle = new CheckBox { Left = 18, Top = 138, Width = 444, Height = 24, Text = "关闭最后一个 localhost 预览页时停止对应服务", Checked = true };
+            _previewToggle = new CheckBox { Left = 18, Top = 159, Width = 520, Height = 24, Text = "关闭最后一个 localhost 预览页时停止对应服务", Checked = true };
             _previewToggle.CheckedChanged += delegate
             {
-                if (_previewCleanup != null) _previewCleanup.SetEnabled(_running && _previewToggle.Checked);
+                if (_previewCleanup != null) _previewCleanup.SetEnabled(_previewToggle.Checked);
                 if (!_previewToggle.Checked) _previewStatus.Text = "预览收尾：已暂停";
             };
             Controls.Add(_previewToggle);
-            _previewStatus = new Label { Left = 18, Top = 171, Width = 444, Height = 24, Text = "预览收尾：等待浏览器扩展连接" };
+            _previewStatus = new Label { Left = 18, Top = 190, Width = 520, Height = 24, Text = "预览收尾：等待浏览器扩展连接" };
             Controls.Add(_previewStatus);
-            Controls.Add(new Label { Left = 18, Top = 200, Width = 444, Height = 22, Text = "引擎可留空；预览收尾和兜底重试仍会独立运行。" });
+            Controls.Add(CreateLabel("管理员确认仅在手动清理时出现；预览收尾独立运行。", 18, 219));
 
-            _countdown = options.InitialDelaySeconds;
+            _countdown = options.IntervalSeconds;
             _timer = new System.Windows.Forms.Timer { Interval = 1000 };
             _timer.Tick += TimerTick;
             Shown += delegate
@@ -349,18 +332,16 @@ namespace MemoryCompression
                     try { _previewCleanup = new PreviewCleanup(options.PreviewPort, options.PreviewLogDirectory); }
                     catch (Exception ex) { _previewStatus.Text = "预览收尾：未能启动，请检查本地端口或记录目录"; _previewStatus.AccessibleDescription = ex.Message; }
                     _timer.Start();
-                    if (_countdown <= 0) RunOptimizer();
                 }
             };
         }
 
         internal string ResultText { get { return _resultValue.Text; } }
-        internal string[] Labels { get { return new[] { "可选引擎", "本次结果", "重试间隔", "秒" }; } }
-        internal int IntervalSeconds { get { return Decimal.ToInt32(_intervalBox.Value); } }
+        internal string[] Labels { get { return new[] { "清理引擎", "清理范围", "运行方式", "本次结果" }; } }
+        internal int IntervalSeconds { get { return _options.IntervalSeconds; } }
         internal bool OptimizerStarted { get { return _optimizerRunning; } }
         internal bool PreviewBridgeStarted { get { return _previewCleanup != null; } }
         internal bool PreviewCleanupEnabled { get { return _previewToggle.Checked; } }
-        internal bool IsRunning { get { return _running; } }
         protected override bool ShowWithoutActivation { get { return true; } }
 
         private static Label CreateLabel(string text, int left, int top)
@@ -368,95 +349,48 @@ namespace MemoryCompression
             return new Label { AutoSize = true, Left = left, Top = top, Text = text };
         }
 
-        private void BrowseButtonClick(object sender, EventArgs e)
-        {
-            using (OpenFileDialog dialog = new OpenFileDialog())
-            {
-                dialog.Filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*";
-                dialog.FileName = _optimizerBox.Text;
-                if (dialog.ShowDialog(this) == DialogResult.OK) _optimizerBox.Text = dialog.FileName;
-            }
-        }
-
         private void ToggleButtonClick(object sender, EventArgs e)
         {
-            _running = !_running;
-            if (_previewCleanup != null) _previewCleanup.SetEnabled(_running && _previewToggle.Checked);
-            _toggleButton.Text = _running ? "停止" : "启动";
-            if (_running)
-            {
-                _countdown = 0;
-                RunOptimizer();
-            }
+            RunOptimizer();
         }
 
         private void TimerTick(object sender, EventArgs e)
         {
-            QueuePreviewTick(false);
+            bool fallback = --_countdown <= 0;
+            if (fallback) _countdown = _options.IntervalSeconds;
+            QueuePreviewTick(fallback);
             if (_previewCleanup != null) _previewStatus.Text = _previewCleanup.Status;
-            if (!_running) return;
-            _countdown--;
-            if (_countdown <= 0) RunOptimizer();
         }
 
         private void RunOptimizer()
         {
-            if (!_running) return;
-            QueuePreviewTick(true);
-            _countdown = Decimal.ToInt32(_intervalBox.Value);
-            if (_optimizerRunning) return;
-
-            string optimizerPath = _optimizerBox.Text.Trim();
-            if (optimizerPath.Length == 0)
-            {
-                _resultValue.Text = "未配置引擎，仅收尾预览";
-                return;
-            }
-            if (!File.Exists(optimizerPath))
-            {
-                _resultValue.Text = "引擎不存在，预览收尾不受影响";
-                return;
-            }
-
-            long beforeMb = NativeMemory.AvailableMegabytes();
+            if (_optimizerRunning || _closing) return;
             _optimizerRunning = true;
-            _resultValue.Text = "正在清理…";
-
-            try
+            _toggleButton.Enabled = false;
+            _resultValue.Text = "等待管理员确认／清理低优先级缓存…";
+            ThreadPool.QueueUserWorkItem(delegate
             {
-                HiddenDesktopProcess hiddenProcess = HiddenDesktopProcess.Start(Path.GetFullPath(optimizerPath), _options.OptimizerArguments);
-                ThreadPool.QueueUserWorkItem(delegate
+                EngineResult result;
+                try { result = _clean(); }
+                catch (Exception ex) { result = new EngineResult { Message = "清理失败：" + ex.Message }; }
+                try
                 {
-                    string result;
-                    try
+                    if (_closing || IsDisposed) return;
+                    BeginInvoke((MethodInvoker)delegate
                     {
-                        hiddenProcess.Process.WaitForExit();
-                        long afterMb = NativeMemory.AvailableMegabytes();
-                        long increaseMb = beforeMb >= 0 && afterMb >= beforeMb ? afterMb - beforeMb : 0;
-                        result = hiddenProcess.Process.ExitCode == 0
-                            ? string.Format("引擎完成，可用内存增加约 {0:N0} MB", increaseMb)
-                            : "引擎返回失败，预览收尾不受影响";
-                    }
-                    catch (Exception) { result = "引擎执行失败，预览收尾不受影响"; }
-                    finally { hiddenProcess.Dispose(); }
-                    try
-                    {
-                        if (!_closing) BeginInvoke((MethodInvoker)delegate { _optimizerRunning = false; _resultValue.Text = result; });
-                    }
-                    catch (ObjectDisposedException) { }
-                    catch (InvalidOperationException) { }
-                });
-            }
-            catch (Exception)
-            {
-                _optimizerRunning = false;
-                _resultValue.Text = "引擎启动失败，预览收尾不受影响";
-            }
+                        _optimizerRunning = false;
+                        _toggleButton.Enabled = true;
+                        _resultValue.Text = result.Message;
+                    });
+                }
+                catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
+            });
         }
 
         private void QueuePreviewTick(bool fallback)
         {
-            if (_closing || !_running || !_previewToggle.Checked || _previewCleanup == null) return;
+            if (_closing || !_previewToggle.Checked || _previewCleanup == null) return;
             if (fallback) Interlocked.Exchange(ref _previewFallbackRequested, 1);
             if (Interlocked.CompareExchange(ref _previewBusy, 1, 0) != 0) return;
             ThreadPool.QueueUserWorkItem(delegate
@@ -492,8 +426,10 @@ namespace MemoryCompression
             Append(json, "optimizer_arguments", options.OptimizerArguments, true);
             json.Append("\"initial_delay_seconds\":").Append(options.InitialDelaySeconds).Append(',');
             json.Append("\"interval_seconds\":").Append(form.IntervalSeconds).Append(',');
-            json.Append("\"startup_cleanup\":").Append(options.InitialDelaySeconds == 0 && !string.IsNullOrWhiteSpace(options.OptimizerPath) ? "true" : "false").Append(',');
-            json.Append("\"optimizer_configured\":").Append(!string.IsNullOrWhiteSpace(options.OptimizerPath) ? "true" : "false").Append(',');
+            json.Append("\"startup_cleanup\":false,");
+            json.Append("\"automatic_memory_cleanup\":false,");
+            json.Append("\"manual_only\":true,");
+            json.Append("\"optimizer_configured\":").Append(File.Exists(options.OptimizerPath) ? "true" : "false").Append(',');
             json.Append("\"animated_countdown\":false,");
             json.Append("\"preview_cleanup_enabled\":").Append(form.PreviewCleanupEnabled ? "true" : "false").Append(',');
             json.Append("\"preview_bridge_started\":").Append(form.PreviewBridgeStarted ? "true" : "false").Append(',');

@@ -6,7 +6,14 @@ browser profile, runtime history, credential, or personal backup is included.
 
 An external optimizer can be configured by its user. Its own license and behavior
 are separate from this project; this project's license does not grant rights to it.
-The application neither downloads such an engine nor requires one for preview cleanup.
+The application does not require an engine for preview cleanup. The separate,
+optional Install-WindowsMemoryCleaner.ps1 script downloads the official signed
+Windows Memory Cleaner 3.0.8 only when the user explicitly runs that script.
+Windows Memory Cleaner is a separate GPL-3.0 project by Igor Mundstein:
+https://github.com/IgorMundstein/WinMemoryCleaner
+Its executable and source code are not included in this distribution. The optional
+installer also downloads its LICENSE alongside the engine. This project's MIT
+license does not relicense Windows Memory Cleaner.
 
 Windows and .NET Framework are system prerequisites and are not redistributed here.
 Playwright is a development-only dependency installed separately through npm;

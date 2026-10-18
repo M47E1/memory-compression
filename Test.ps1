@@ -28,18 +28,27 @@ $adversarial = Join-Path $OutputDirectory 'AdversarialTests.exe'
 if ($LASTEXITCODE -ne 0) { throw 'Adversarial test compilation failed.' }
 & $adversarial
 if ($LASTEXITCODE -ne 0) { throw 'Adversarial tests failed.' }
-$stub = Join-Path $OutputDirectory 'OptimizerStub.exe'
-& $compiler /nologo /target:exe "/out:$stub" (Join-Path $PSScriptRoot 'tests\OptimizerStub.cs')
-if ($LASTEXITCODE -ne 0) { throw 'Optional-engine test helper compilation failed.' }
+$gentle = Join-Path $OutputDirectory 'GentleEngineTests.exe'
+& $compiler /nologo /target:exe /main:GentleEngineTests /utf8output /codepage:65001 `
+    /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll `
+    /reference:System.Management.dll /reference:System.Web.Extensions.dll "/out:$gentle" `
+    (Join-Path $PSScriptRoot 'src\MemoryCompression.cs') (Join-Path $PSScriptRoot 'src\PreviewCleanup.cs') (Join-Path $PSScriptRoot 'src\GentleEngine.cs') (Join-Path $PSScriptRoot 'tests\GentleEngineTests.cs')
+if ($LASTEXITCODE -ne 0) { throw 'Gentle-engine test compilation failed.' }
+$uiMemory = Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory
+if ($uiMemory.AvailableBytes -lt 0.5GB -or $uiMemory.PercentCommittedBytesInUse -ge 95 -or ($uiMemory.CommitLimit-$uiMemory.CommittedBytes) -lt 1GB) {
+    throw 'Not enough free memory for GUI tests; no GUI test worker was started.'
+}
+& $gentle
+if ($LASTEXITCODE -ne 0) { throw 'Gentle-engine or manual-only tests failed.' }
 $runtime = Join-Path $OutputDirectory 'RuntimeTests.exe'
 & $compiler /nologo /target:exe /main:RuntimeTests /utf8output /codepage:65001 `
     /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll `
     /reference:System.Management.dll /reference:System.Web.Extensions.dll "/out:$runtime" `
-    (Join-Path $PSScriptRoot 'src\MemoryCompression.cs') (Join-Path $PSScriptRoot 'src\PreviewCleanup.cs') (Join-Path $PSScriptRoot 'tests\RuntimeTests.cs')
+    (Join-Path $PSScriptRoot 'src\MemoryCompression.cs') (Join-Path $PSScriptRoot 'src\PreviewCleanup.cs') (Join-Path $PSScriptRoot 'src\GentleEngine.cs') (Join-Path $PSScriptRoot 'tests\RuntimeTests.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Runtime test compilation failed.' }
 $runtimeOut = Join-Path $OutputDirectory 'runtime.stdout.log'
 $runtimeError = Join-Path $OutputDirectory 'runtime.stderr.log'
-$process = Start-Process -FilePath $runtime -ArgumentList @(('"' + $OutputDirectory + '"'),('"' + $stub + '"')) `
+$process = Start-Process -FilePath $runtime -ArgumentList @(('"' + $OutputDirectory + '"')) `
     -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput $runtimeOut -RedirectStandardError $runtimeError
 Get-Content -LiteralPath $runtimeOut
 if ($process.ExitCode -ne 0) { Get-Content -LiteralPath $runtimeError; throw 'Runtime tests failed.' }
@@ -51,6 +60,9 @@ foreach ($mode in @('json', 'offscreen')) {
     $state = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
     if ($state.optimizer_configured -or $state.optimizer_started -or $state.preview_bridge_started -or -not $state.preview_cleanup_enabled) {
         throw 'Default UI unexpectedly configured an optimizer or started a live worker during the render test.'
+    }
+    if ($state.startup_cleanup -or $state.automatic_memory_cleanup -or -not $state.manual_only -or $state.optimizer_arguments -ne '/StandbyListLowPriority') {
+        throw 'The release must be manual-only and low-priority-only.'
     }
 }
 if ($Browser) {
