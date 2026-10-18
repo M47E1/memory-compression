@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Memory Compression",
+  "version": "1.0.0",
+  "description": "关闭最后一个本地预览页后停止对应开发服务；内存释放引擎可选。",
+  "minimum_chrome_version": "120",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwo2HUexwcyO0Vchqy0ix8piiFpWdKyKYz6shyIOLjPEZMgX7wGom5Obk2pdqdYU/wIx8HfNIlpPIJ7LSXpllrxuumPWf4Rq3q82/DJml9B6++TdSP21g1J2y2enCVZ/ib5pB6/qyP4LDZoKOoIB25vwQeofOVxWXmLUi8HFfK64F+93+iRrHZucd+VTHYo9bNQAHBgQuzKGos6btDAyYl58AhpT4msYFqUSXUzENx8HJZPtBgBBjC046cZ1B26/bnI3A5fvQKNT7/KCSl7nBLx4zsoj/l81KmxZbak+DmqsS8zl1aDUvcluWuuSEIcm+756+oPT85dg9xoqwQe019QIDAQAB",
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://[::1]/*",
+    "https://localhost/*",
+    "https://127.0.0.1/*",
+    "https://[::1]/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Memory Compression",
+    "default_popup": "popup.html"
+  }
+}

@@ -1,0 +1,13 @@
+Memory Compression
+
+The application and browser extension source in this package are licensed under
+the MIT License. No third-party memory optimizer executable, proprietary module,
+browser profile, runtime history, credential, or personal backup is included.
+
+An external optimizer can be configured by its user. Its own license and behavior
+are separate from this project; this project's license does not grant rights to it.
+The application neither downloads such an engine nor requires one for preview cleanup.
+
+Windows and .NET Framework are system prerequisites and are not redistributed here.
+Playwright is a development-only dependency installed separately through npm;
+its upstream license applies. Browser binaries are not part of either release ZIP.

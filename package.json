@@ -1,0 +1,10 @@
+{
+  "name": "memory-compression",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Windows localhost preview lifecycle tool; optional external memory engine.",
+  "scripts": { "test": "node --test tests/ports.test.cjs tests/release.test.cjs" },
+  "engines": { "node": ">=18" },
+  "devDependencies": { "playwright": "1.56.1" }
+}

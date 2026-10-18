@@ -1,0 +1,12 @@
+/bin/
+/artifacts/
+/test-output/
+/node_modules/
+/.vs/
+*.user
+*.suo
+*.log
+*.jsonl
+*.zip
+.DS_Store
+Thumbs.db
