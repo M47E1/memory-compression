@@ -1,45 +1,47 @@
 <p align="center">
-  <img src="assets/cover-github.png" alt="Memory Compression — Localhost, cleaned up. 关闭浏览器预览页，让对应本地服务一起收尾。" width="960" />
+  <img src="assets/cover-github.png" alt="Memory Compression — Memory cleaner for Vibe Coding. 内存模块、定时器与后台运行开关的项目插画。" width="960" />
 </p>
 
 # Memory Compression
 
-**关掉最后一个 localhost 预览页，把对应服务也一起收尾。**
+**为 Vibe Coding 准备的定时内存清理器。设好间隔，让清理在后台按时执行。**
 
-A small Windows companion for everyday development. Close the last connected preview tab; stop its matching local server.
+A scheduled memory-cleanup companion for Vibe Coding, with optional localhost preview cleanup.
 
-[**下载 Windows 便携版**](https://github.com/M47E1/memory-compression/releases/latest) · [三步开始](#直接使用) · [识别范围](#会关闭什么) · [审计说明](AUDIT.md) · [MIT License](LICENSE)
+[**下载 Windows 便携版**](https://github.com/M47E1/memory-compression/releases/latest) · [开始使用](#直接使用) · [开机启动](#开机启动) · [预览收尾范围](#会关闭什么) · [审计说明](AUDIT.md)
 
-Windows 10/11 · Chrome / Edge · .NET Framework · 无需管理员权限 · 外部引擎可选
+Windows 10/11 · 可设置时间 · 后台执行 · 可选浏览器扩展 · MIT
 
-## 写代码时，页面关了，服务还在？
+## 长时间 Vibe Coding，把清理交给定时器
 
-浏览器标签页和开发服务各自运行。关掉页面，`next dev`、Vite 或 Astro 的进程通常仍留在后台；一天切换几个项目，预览服务也容易越攒越多。
+编辑器、浏览器、终端和开发服务常常一开就是一天。把可信的内存释放引擎接入工具，设置执行间隔，就能定时在后台调用，无需每次手动点清理。默认间隔 200 秒，可自行调整；上一轮引擎尚未结束时，不重复启动。
 
-Memory Compression 用浏览器扩展报告仍打开的本地端口，再由 Windows 工具核对对应进程。最后一页关掉后，等待约 3 秒，再确认并停止那个服务；刷新、切换标签或仍有同端口页面时，服务继续运行。
+内存清理、定时执行和本地预览收尾分开处理。浏览器扩展只负责额外的 localhost 预览收尾：最后一页关掉后，等待约 3 秒，再核对并停止对应服务；刷新或仍有同端口页面时，服务继续运行。
 
 ```text
-打开预览 → 扩展报告本地端口 → 记录服务身份
-关闭最后一页 → 等待约 3 秒 → 重新核对 → 停止对应服务
+选择可信引擎 → 设置执行间隔 → 后台定时调用
+可选：连接浏览器扩展 → 关闭最后一个预览页 → 核对并停止对应服务
 ```
 
-**不需要内存清理引擎。** 默认只做预览收尾，不清空系统缓存，不删除分页文件，也不下载或捆绑鲁大师等第三方程序。需要定时调用自己的可信引擎时，可以单独配置；引擎失败也不影响预览收尾。
+**清理引擎由你选择。** 开源包不下载或捆绑鲁大师等第三方程序。配置引擎后才能执行内存释放；具体清理范围和效果由所选引擎决定。引擎留空时仅启用预览收尾，不会自行清空系统缓存或删除分页文件。引擎失败也不影响预览收尾。
 
-> **名称说明：** Memory Compression 为项目名称，并非 Windows 系统内存压缩功能的开关，也不包含自行实现的内存压缩算法。它解决的是本地开发预览的进程收尾，不承诺提高系统速度或释放固定容量的内存。
+> **名称说明：** Memory Compression 为项目名称，并非 Windows 系统内存压缩功能的开关，也不包含自行实现的内存压缩算法。它负责定时调用清理引擎与预览进程收尾，不承诺提高系统速度或释放固定容量的内存。
 
 ## 直接使用
 
 需要 Windows 10/11 和 .NET Framework 4.8 或更新的 4.x 运行环境。普通使用不需要 Node.js、Python、Visual Studio 或管理员权限。目标服务必须属于当前用户可停止的进程；权限不足时不会自动提权。
 
-1. **解压并运行。** 从上方下载便携 ZIP，解压后双击 `MemoryCompression.exe`，可选引擎留空。
-2. **加载扩展。** Chrome 打开 `chrome://extensions`，Edge 打开 `edge://extensions`，开启开发者模式，选择“加载已解压的扩展”，加载包内的 `browser-extension` 文件夹。扩展名称为 **Memory Compression**，固定 ID 为 `dgpfiadablpfojbalengndogkiidplcb`。
-3. **确认连接，再正常开发。** 打开扩展弹窗，显示“已连接”后打开自己的 localhost 预览。关闭最后一个对应端口的页面，工具就会核对并停止对应服务；进程核对和退出还需要少量时间，不保证在整整 3 秒时退出。
+1. **解压并运行。** 从上方下载便携 ZIP，解压后双击 `MemoryCompression.exe`。
+2. **配置清理与时间。** 通过“浏览”选择自己信任、有权使用的内存释放引擎，再设置间隔。当前界面中的“重试间隔”同时用于引擎执行间隔与预览兜底重试；点击“停止”可暂停，两项功能会一起暂停。
+3. **按需连接预览收尾。** 如果还希望关掉预览页面时停止对应服务，再在 Chrome 的 `chrome://extensions` 或 Edge 的 `edge://extensions` 中开启开发者模式，加载包内的 `browser-extension` 文件夹。扩展名称为 **Memory Compression**，固定 ID 为 `dgpfiadablpfojbalengndogkiidplcb`；弹窗显示“已连接”后再使用。进程核对和退出还需要少量时间，不保证在整整 3 秒时退出。
+
+最小化后继续计时；**关闭主窗口会退出程序**，当前没有关窗后托盘保活。后台执行指清理引擎在隐藏桌面运行，并非安装 Windows 系统服务。
 
 ### 程序界面
 
 <img src="assets/app-window.png" alt="实际 Windows 程序界面：可选引擎留空，预览收尾已启用，重试间隔为 200 秒。" width="486" />
 
-封面为 ImageGen 制作的项目插画；上图为实际程序界面。引擎栏留空即可使用预览收尾。
+封面为 ImageGen 制作的项目插画；上图为实际程序界面。截图中的引擎栏留空，因此只启用预览收尾。
 
 Chrome、Edge、不同浏览器配置文件需要分别加载。同一端口在任一已连接浏览器中仍打开时，不停止。无痕窗口需要在这个扩展的详细设置里允许无痕/InPrivate 使用；未允许时，不要在普通窗口与未受监看的无痕窗口同时查看同一个服务。
 
@@ -70,6 +72,21 @@ Chrome、Edge、不同浏览器配置文件需要分别加载。同一端口在�
 `/optimize` 只是参数格式示例，具体参数由所选引擎决定，默认不传参数。设置仅对本次启动生效。引擎缺失、无法启动、返回失败或执行时间较长，都不暂停预览收尾。相同引擎尚未退出时，不重复启动。
 
 引擎在单独的隐藏 Windows 桌面上执行，避免动效打扰；不兼容这种方式的引擎会失败，但不会影响预览收尾。界面中的“可用内存增加”是执行前后系统可用内存的差值，受其他程序影响，不能证明引擎实际释放了同等内存，也不是分页文件清理量。
+
+## 开机启动
+
+可以使用 Windows 的启动文件夹，在当前用户登录后自动运行。**当前没有内置开机启动开关，也不会自动写入启动项。** 这是 Windows 提供的快捷方式机制，参见 [Microsoft 的启动应用说明](https://support.microsoft.com/zh-cn/windows/experience/startup-boot/configure-startup-applications-in-windows)。
+
+1. 把程序放在固定目录，按 `Win + R`，输入 `shell:startup`，打开当前用户的启动文件夹。
+2. 在该文件夹中新建快捷方式，目标填写自己的程序路径。需要每次自动使用同一引擎、间隔与最小化状态时，将参数一并写进目标，例如：
+
+```text
+"D:\Tools\MemoryCompression\MemoryCompression.exe" --optimizer "D:\Tools\TrustedOptimizer.exe" --interval 200 --start-minimized
+```
+
+3. 保存快捷方式。下次登录 Windows 时会按该配置启动；取消时移除自己创建的快捷方式即可。需要引擎参数时再加 `--optimizer-arguments`，参数由所选引擎决定。
+
+界面设置仅对本次运行生效，快捷方式中的参数才是下次启动时的配置。程序仍以当前用户权限运行，不自动提权。
 
 ## 隐私、记录和并存
 

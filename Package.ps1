@@ -10,7 +10,7 @@ if (Test-Path -LiteralPath $stage) { throw 'Package staging directory already ex
 New-Item -ItemType Directory -Path $stage | Out-Null
 $sourceFiles = @(
     '.gitignore', 'LICENSE', 'NOTICE', 'README.md', 'AUDIT.md', 'Build.ps1', 'Test.ps1', 'Package.ps1', 'package.json', 'package-lock.json',
-    'assets\README.md', 'assets\cover-github.png', 'assets\cover-portfolio.webp', 'assets\app-window.png',
+    'assets\README.md', 'assets\cover-github.png', 'assets\cover-portfolio.webp', 'assets\app-window.png', 'assets\app.ico',
     'src\MemoryCompression.cs', 'src\PreviewCleanup.cs',
     'browser-extension\manifest.json', 'browser-extension\background.js', 'browser-extension\ports.js',
     'browser-extension\popup.html', 'browser-extension\popup.js',

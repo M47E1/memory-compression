@@ -53,8 +53,14 @@ test("showcase images stay small and are included in both package variants", () 
   assert.equal(cover.toString("ascii", 0, 4), "RIFF");
   assert.equal(cover.toString("ascii", 8, 12), "WEBP");
   assert.ok(cover.length < 80 * 1024);
+  const icon = fs.readFileSync(path.join(root, "assets/app.ico"));
+  assert.equal(icon.readUInt16LE(0), 0);
+  assert.equal(icon.readUInt16LE(2), 1);
+  assert.equal(icon.readUInt16LE(4), 7);
+  assert.match(read("Build.ps1"), /win32icon/);
+  assert.match(read("src/MemoryCompression.cs"), /Icon = Icon\.ExtractAssociatedIcon\(Application\.ExecutablePath\)/);
   const packaging = read("Package.ps1");
-  for (const image of ["cover-github.png", "cover-portfolio.webp", "app-window.png"]) {
+  for (const image of ["cover-github.png", "cover-portfolio.webp", "app-window.png", "app.ico"]) {
     assert.ok(packaging.includes(`'assets\\${image}'`));
   }
   assert.ok(packaging.includes("$_ -like 'assets\\*'"));

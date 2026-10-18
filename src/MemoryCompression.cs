@@ -278,6 +278,7 @@ namespace MemoryCompression
         {
             _options = options;
             Text = "Memory Compression";
+            Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             ClientSize = new Size(480, 228);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
